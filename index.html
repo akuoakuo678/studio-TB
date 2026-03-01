@@ -1,1399 +1,158 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#000000">
-  <title>TB Fitness | קורס כושר דיגיטלי</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --black:  #000;
-      --dark:   #0d0d0d;
-      --mid:    #1a1a1a;
-      --silver: #888;
-      --light:  #c8c8c8;
-      --white:  #f4f4f4;
-      --accent: #e63946;
-      --accent-dim: #a4161a;
-      --burgundy: #800020;
-      --red-bright: #ef233c;
-    }
-
-    /* ─── RESET & BASE ─── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { 
-      scroll-behavior: smooth; 
-      -webkit-text-size-adjust: 100%; 
-      -webkit-tap-highlight-color: transparent;
-    }
-    body {
-      background: var(--black);
-      color: var(--white);
-      font-family: 'Heebo', sans-serif;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      touch-action: pan-y;
-    }
-
-    /* noise texture */
-    body::before {
-      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      opacity: 0.018;
-    }
-
-    /* ─── BACKGROUND FLOWING LINES ─── */
-    #bg-canvas {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.7;
-    }
-
-    /* ─── LOADER ─── */
-    #loader {
-      position: fixed; inset: 0; background: var(--black); z-index: 9999;
-      display: flex; align-items: center; justify-content: center; overflow: hidden;
-    }
-    .loader-inner { display: flex; flex-direction: column; align-items: center; padding: 0 24px; text-align: center; }
-    .loader-word {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(44px, 10vw, 130px); letter-spacing: 0.05em; line-height: 0.88;
-      color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.12);
-      position: relative; overflow: hidden; display: block;
-    }
-    .loader-word .fill {
-      position: absolute; inset: 0; color: var(--white); -webkit-text-stroke: 0;
-      clip-path: inset(100% 0 0 0); animation: wFill 0.6s cubic-bezier(0.7,0,0.3,1) forwards;
-    }
-    .loader-word:nth-child(1) .fill { animation-delay: 0.2s; }
-    .loader-word:nth-child(2) .fill { animation-delay: 0.42s; }
-    .loader-word:nth-child(4) .fill { animation-delay: 0.75s; color: var(--silver); }
-    @keyframes wFill { to { clip-path: inset(0% 0 0 0); } }
-    .loader-line {
-      width: 0; height: 1px; margin-top: 24px;
-      background: linear-gradient(90deg, transparent, var(--white), transparent);
-      animation: lGrow 1s ease forwards 0.9s;
-    }
-    @keyframes lGrow { to { width: min(320px, 72vw); } }
-    .loader-pct { font-size: 10px; letter-spacing: 0.36em; color: var(--silver); margin-top: 14px; opacity: 0; animation: fIn 0.4s ease forwards 0.2s; }
-    @keyframes fIn { to { opacity: 1; } }
-    #loader.exit { animation: cUp 0.8s cubic-bezier(0.7,0,0.3,1) forwards; }
-    @keyframes cUp { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
-
-    /* ─── SECTION DIVIDERS / TRANSITIONS ─── */
-    .wave-div {
-      position: relative; overflow: hidden; line-height: 0;
-      height: 60px; margin-top: -1px;
-    }
-    .wave-div svg { display: block; width: 100%; height: 100%; }
-
-    .clip-in  { clip-path: polygon(0 0, 100% 8%, 100% 100%, 0 100%); }
-    .clip-out { clip-path: polygon(0 8%, 100% 0, 100% 100%, 0 100%); }
-
-    /* ─── HERO ─── */
-    #hero {
-      min-height: 100svh; position: relative;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: max(80px, env(safe-area-inset-top) + 60px) 20px max(110px, env(safe-area-inset-bottom) + 90px) 20px; 
-      text-align: center; overflow: hidden;
-    }
-    .hero-stripe {
-      position: absolute; inset: 0; pointer-events: none;
-      background: repeating-linear-gradient(-55deg, transparent 0, transparent 100px, rgba(255,255,255,0.01) 100px, rgba(255,255,255,0.01) 101px);
-    }
-    .hero-glow {
-      position: absolute; width: 120vw; height: 120vw; max-width: 700px; max-height: 700px;
-      top: 0; left: 50%; transform: translate(-50%, -40%);
-      background: radial-gradient(circle, rgba(230,57,70,0.08) 0%, transparent 65%);
-      pointer-events: none;
-      animation: pulseGlow 8s ease-in-out infinite;
-    }
-    @keyframes pulseGlow {
-      0%, 100% { transform: translate(-50%, -40%) scale(1); opacity: 1; }
-      50% { transform: translate(-50%, -38%) scale(1.1); opacity: 0.7; }
-    }
-    
-    .hero-glow::before {
-      content: '';
-      position: absolute;
-      width: 400px; height: 400px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(230,57,70,0.12) 0%, transparent 70%);
-      top: 20%; right: -10%;
-      animation: floatOrb1 12s ease-in-out infinite;
-      filter: blur(60px);
-    }
-    .hero-glow::after {
-      content: '';
-      position: absolute;
-      width: 350px; height: 350px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(164,22,26,0.1) 0%, transparent 70%);
-      bottom: 10%; left: -5%;
-      animation: floatOrb2 10s ease-in-out infinite;
-      filter: blur(50px);
-    }
-    @keyframes floatOrb1 {
-      0%, 100% { transform: translate(0, 0); }
-      33% { transform: translate(-30px, -40px); }
-      66% { transform: translate(20px, -20px); }
-    }
-    @keyframes floatOrb2 {
-      0%, 100% { transform: translate(0, 0); }
-      33% { transform: translate(40px, 30px); }
-      66% { transform: translate(-20px, 40px); }
-    }
-    .hero-bg-num {
-      position: absolute; font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(200px, 48vw, 580px); color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,0.028);
-      top: 50%; left: 50%; transform: translate(-50%, -50%);
-      pointer-events: none; user-select: none; will-change: transform;
-      animation: floatBg 12s ease-in-out infinite;
-    }
-    @keyframes floatBg {
-      0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
-      25% { transform: translate(-48%, -52%) rotate(1deg); }
-      50% { transform: translate(-52%, -50%) rotate(-1deg); }
-      75% { transform: translate(-50%, -48%) rotate(0.5deg); }
-    }
-    .particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
-    .particle {
-      position: absolute; border-radius: 50%;
-      animation: particleDrift linear infinite;
-    }
-    @keyframes particleDrift {
-      0%   { transform: translateY(0) translateX(0); opacity: 0; }
-      8%   { opacity: 1; }
-      92%  { opacity: 0.3; }
-      100% { transform: translateY(-110vh) translateX(20px); opacity: 0; }
-    }
-
-    .hero-content { position: relative; z-index: 2; max-width: 860px; width: 100%; }
-    .hero-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(62px, 14vw, 175px);
-      line-height: 0.87; letter-spacing: 0.02em; color: var(--white);
-    }
-    .hero-title .t-line { display: block; overflow: hidden; }
-    .hero-title .t-line span {
-      display: block;
-      transform: translateY(110%) skewY(3deg);
-      animation: hReveal 0.9s cubic-bezier(0.16,1,0.3,1) forwards;
-    }
-    .hero-title .t-line:nth-child(1) span { animation-delay: 2s; }
-    .hero-title .t-line:nth-child(2) span {
-      animation-delay: 2.12s;
-      background: linear-gradient(135deg, var(--burgundy) 0%, var(--red-bright) 20%, var(--silver) 40%, var(--red-bright) 60%, var(--burgundy) 80%, var(--accent) 100%);
-      background-size: 300% 300%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: hReveal 0.9s cubic-bezier(0.16,1,0.3,1) forwards, colorFlow 6s ease-in-out infinite;
-      animation-delay: 2.12s, 3s;
-      text-shadow: 0 0 35px rgba(128,0,32,0.5);
-      filter: drop-shadow(0 0 6px rgba(230,57,70,0.4));
-    }
-    @keyframes colorFlow {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    .hero-title .t-line:nth-child(3) span { animation-delay: 2.24s; }
-    @keyframes hReveal { to { transform: translateY(0) skewY(0deg); } }
-
-    .hero-divider {
-      width: 0; height: 1px; margin: 24px auto;
-      background: linear-gradient(90deg, transparent, rgba(200,200,200,0.7), rgba(255,255,255,0.9), rgba(200,200,200,0.7), transparent);
-      animation: expLine 0.7s ease forwards 2.55s; position: relative; overflow: hidden;
-    }
-    .hero-divider::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(230,57,70,0.6), transparent);
-      animation: dividerShine 4s ease-in-out infinite;
-    }
-    @keyframes dividerShine {
-      0%, 100% { transform: translateX(-150%); opacity: 0; }
-      50% { transform: translateX(150%); opacity: 1; }
-    }
-    @keyframes expLine { to { width: 200px; } }
-
-    .hero-sub {
-      font-size: clamp(15px, 4vw, 19px); font-weight: 300;
-      color: var(--silver); line-height: 1.65; max-width: 560px; margin: 0 auto 40px;
-      opacity: 0; animation: fSlide 0.7s ease forwards 2.7s;
-    }
-    .hero-sub strong { color: var(--white); font-weight: 700; }
-    .mobile-br { display: none; }
-    
-    @media (max-width: 640px) {
-      .mobile-br { display: block; }
-      .hero-sub { line-height: 1.75; }
-      .hero-sub-line1, .hero-sub-line2 { display: block; }
-    }
-    .hero-btns {
-      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
-      opacity: 0; animation: fSlide 0.7s ease forwards 2.9s;
-    }
-    @keyframes fSlide { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
-
-    .btn-main {
-      display: inline-block; background: var(--white); color: var(--black);
-      font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.12em;
-      padding: 15px 40px; text-decoration: none; position: relative; overflow: hidden;
-      -webkit-tap-highlight-color: transparent; transition: transform 0.25s, box-shadow 0.3s;
-      touch-action: manipulation;
-      box-shadow: 0 0 0 rgba(74,158,255,0);
-      animation: btnPulse 3s ease-in-out infinite;
-    }
-    @keyframes btnPulse {
-      0%, 100% { box-shadow: 0 0 0 rgba(230,57,70,0); }
-      50% { box-shadow: 0 0 25px rgba(230,57,70,0.4); }
-    }
-    .btn-main::before {
-      content: ''; position: absolute; inset: -2px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-      opacity: 0; transition: opacity 0.3s;
-      z-index: -1; filter: blur(8px);
-    }
-    .btn-main::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-      transform: scaleX(0); transform-origin: left; transition: transform 0.35s cubic-bezier(0.7,0,0.3,1);
-    }
-    .btn-main:hover::before { opacity: 0.6; }
-    .btn-main:hover::after { transform: scaleX(1); }
-    .btn-main:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 24px rgba(230,57,70,0.3);
-    }
-    .btn-main:active { transform: scale(0.97) translateY(-3px); }
-    .btn-main span { position: relative; z-index: 1; }
-
-    .btn-ghost {
-      display: inline-block; background: transparent; color: var(--light);
-      font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.12em;
-      padding: 14px 28px; border: 1px solid rgba(255,255,255,0.2); text-decoration: none;
-      transition: all 0.25s; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-      position: relative; overflow: hidden;
-    }
-    .btn-ghost::before {
-      content: '';
-      position: absolute; inset: 0;
-      border: 1px solid transparent;
-      background: linear-gradient(135deg, var(--accent), transparent, var(--accent)) border-box;
-      -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .btn-ghost:hover::before { opacity: 1; }
-    .btn-ghost:hover { 
-      color: var(--white);
-      transform: translateY(-3px);
-      box-shadow: 0 4px 16px rgba(230,57,70,0.2);
-    }
-    .btn-ghost:active { background: rgba(230,57,70,0.1); }
-
-    .hero-scroll-hint {
-      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-      display: flex; flex-direction: column; align-items: center;
-      opacity: 0; animation: fSlide 0.6s ease forwards 3.2s;
-    }
-    .scroll-track { width: 1px; height: 52px; background: rgba(255,255,255,0.07); position: relative; overflow: hidden; }
-    .scroll-track::after {
-      content: ''; position: absolute; top: -100%; left: 0; width: 1px; height: 100%;
-      background: linear-gradient(to bottom, transparent, var(--white));
-      animation: sDrop 2s ease-in-out infinite 3.5s;
-    }
-    @keyframes sDrop { 0%{top:-100%} 100%{top:200%} }
-
-    .wedge {
-      position: relative; z-index: 2;
-      height: 0; overflow: visible; line-height: 0;
-    }
-    .wedge svg {
-      display: block; width: 100%;
-      margin-top: -1px;
-    }
-
-    /* ─── TICKER ─── */
-    .vticker {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-      background: rgba(0,0,0,0.95);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      overflow: hidden;
-      height: 44px;
-    }
-    .vticker-track {
-      display: flex;
-      height: 100%;
-      align-items: center;
-      gap: 48px;
-      animation: infiniteScroll 14s linear infinite;
-      will-change: transform;
-    }
-    .vticker-content {
-      display: flex;
-      align-items: center;
-      gap: 48px;
-      flex-shrink: 0;
-    }
-    .vticker-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--silver);
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .vticker-chip .dot {
-      width: 4px;
-      height: 4px;
-      background: var(--silver);
-      border-radius: 50%;
-      flex-shrink: 0;
-      animation: dotPulse 3s ease-in-out infinite;
-    }
-    @keyframes dotPulse {
-      0%,100%{opacity:0.5;transform:scale(1)}
-      50%{opacity:1;transform:scale(1.4);background:var(--light)}
-    }
-    @keyframes infiniteScroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(calc(-50% - 24px)); }
-    }
-
-    /* ─── LAYOUT ─── */
-    .container { max-width: 1060px; margin: 0 auto; padding: 0 20px; }
-
-    .s-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(36px, 5vw, 66px); line-height: 1; letter-spacing: 0.03em;
-      color: var(--white); margin-bottom: 16px;
-      display: block; position: relative; overflow: hidden;
-      animation: titleSway 6s ease-in-out infinite;
-    }
-    @keyframes titleSway {
-      0%, 100% { transform: translateX(0px); }
-      50% { transform: translateX(2px); }
-    }
-    .s-title em { font-style: normal; color: transparent; -webkit-text-stroke: 1px var(--light); }
-    .s-title::after {
-      content: ''; position: absolute;
-      top: 0; left: -60%; width: 40%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(220,220,220,0.06), transparent);
-      transform: skewX(-20deg); animation: shimmer 6s ease-in-out infinite;
-    }
-    @keyframes shimmer { 0%,100%{left:-60%;opacity:0} 40%{opacity:1} 60%{left:120%;opacity:0} }
-
-    /* Hide mobile line breaks on desktop */
-    .mobile-br { display: none; }
-
-    /* ─── PAIN ─── */
-    #pain {
-      padding: 80px 0 90px;
-      position: relative; overflow: hidden;
-      background: var(--black);
-    }
-    #pain::before {
-      content: ''; position: absolute; width: 80vw; height: 80vw; max-width: 500px; max-height: 500px;
-      background: radial-gradient(circle, rgba(150,150,150,0.028) 0%, transparent 65%);
-      top: 50%; left: 50%; transform: translate(-50%,-50%);
-      animation: ambDrift 9s ease-in-out infinite; pointer-events: none;
-    }
-    @keyframes ambDrift {
-      0%,100%{transform:translate(-50%,-50%)}
-      33%{transform:translate(-35%,-60%)}
-      66%{transform:translate(-65%,-40%)}
-    }
-    .pain-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 1px; background: rgba(255,255,255,0.055);
-      margin-top: 40px; border: 1px solid rgba(255,255,255,0.055);
-      position: relative;
-    }
-    .pain-grid::before {
-      content: '';
-      position: absolute;
-      inset: -1px;
-      background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(230,57,70,0.15) 25%, 
-        rgba(164,22,26,0.12) 50%, 
-        rgba(230,57,70,0.15) 75%, 
-        transparent 100%);
-      animation: borderWave 6s linear infinite;
-      pointer-events: none;
-      opacity: 0.6;
-    }
-    @keyframes borderWave {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-    .pain-cell {
-      background: var(--black); padding: 36px 28px; position: relative; overflow: hidden;
-      transition: background 0.3s, transform 0.3s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .pain-cell::before {
-      content: ''; position: absolute; top: 0; left: 0; width: 0; height: 2px;
-      background: linear-gradient(90deg, var(--accent), var(--white), rgba(180,180,180,0.4));
-      transition: width 0.4s ease;
-    }
-    .pain-cell::after {
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(circle at top left, rgba(230,57,70,0.04), transparent 60%);
-      opacity: 0; transition: opacity 0.4s;
-    }
-    .pain-cell:hover::before, .pain-cell:focus-within::before { width: 100%; }
-    .pain-cell:hover::after { opacity: 1; }
-    .pain-cell:hover {
-      background: var(--dark);
-      transform: translateY(-4px);
-    }
-    .pain-h { font-size: clamp(16px,4vw,19px); font-weight: 700; color: var(--white); margin-bottom: 8px; line-height: 1.3; }
-    .pain-p { font-size: clamp(13px,3.5vw,14px); font-weight: 300; color: var(--silver); line-height: 1.75; }
-
-    .pain-conclusion {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(24px, 5.5vw, 48px); letter-spacing: 0.04em;
-      color: var(--white); text-align: center; margin-top: 44px;
-      padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.07);
-    }
-    .pain-conclusion em { font-style: normal; color: transparent; -webkit-text-stroke: 1px var(--light); }
-
-    /* ─── CURRICULUM ─── */
-    #curriculum {
-      padding: 80px 0 90px;
-      background: var(--dark);
-      position: relative; overflow: hidden;
-    }
-    #curriculum::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent 0%, rgba(230,57,70,0.4) 20%, rgba(230,57,70,0.8) 50%, rgba(230,57,70,0.4) 80%, transparent 100%);
-      animation: silverSweep 7s ease-in-out infinite;
-    }
-    @keyframes silverSweep {
-      0%{opacity:0;transform:scaleX(0);transform-origin:right}
-      35%{opacity:1;transform:scaleX(1);transform-origin:right}
-      65%{opacity:1;transform:scaleX(1);transform-origin:left}
-      100%{opacity:0;transform:scaleX(0);transform-origin:left}
-    }
-    .curr-head { margin-bottom: 44px; }
-    .mod-list { display: flex; flex-direction: column; gap: 2px; }
-    .mod-row {
-      display: grid; grid-template-columns: 68px 1fr 28px; align-items: center; gap: 20px;
-      padding: 20px 24px; background: var(--black); border: 1px solid rgba(255,255,255,0.05);
-      position: relative; overflow: hidden;
-      -webkit-tap-highlight-color: transparent; transition: border-color 0.3s, transform 0.3s;
-    }
-    .mod-row::before {
-      content: ''; position: absolute; inset: 0; background: var(--mid);
-      transform: translateX(-101%); transition: transform 0.4s cubic-bezier(0.7,0,0.3,1); z-index: 0;
-    }
-    .mod-row:hover::before, .mod-row:focus-within::before { transform: translateX(0); }
-    .mod-row::after {
-      content: ''; position: absolute; right: 0; top: 0; width: 3px; height: 0;
-      background: linear-gradient(to bottom, transparent, var(--accent), transparent);
-      transition: height 0.4s ease; z-index: 2;
-      box-shadow: 0 0 12px var(--accent);
-    }
-    .mod-row:hover::after { height: 100%; }
-    .mod-row:hover {
-      transform: translateX(-4px);
-      border-color: rgba(230,57,70,0.2);
-    }
-    .mod-row > * { position: relative; z-index: 1; }
-    .mod-n { 
-      font-family: 'Bebas Neue', sans-serif; 
-      font-size: 30px; 
-      color: rgba(255,255,255,0.16); 
-      transition: color 0.3s;
-      animation: breathe 4s ease-in-out infinite;
-    }
-    @keyframes breathe {
-      0%, 100% { opacity: 0.16; transform: scale(1); }
-      50% { opacity: 0.28; transform: scale(1.05); }
-    }
-    .mod-row:nth-child(1) .mod-n { animation-delay: 0s; }
-    .mod-row:nth-child(2) .mod-n { animation-delay: 0.6s; }
-    .mod-row:nth-child(3) .mod-n { animation-delay: 1.2s; }
-    .mod-row:hover .mod-n { color: var(--light); }
-    .mod-title { font-size: clamp(16px,4vw,18px); font-weight: 700; color: var(--white); margin-bottom: 4px; }
-    .mod-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-    .mod-tag { font-size: 11px; color: var(--silver); background: rgba(255,255,255,0.04); padding: 2px 9px; }
-    .mod-arrow { font-size: 18px; color: rgba(255,255,255,0.16); transition: all 0.3s; justify-self: end; }
-    .mod-row:hover .mod-arrow { color: var(--white); transform: translateX(-4px); }
-
-    /* ─── OUTCOMES ─── */
-    #outcomes {
-      padding: 80px 0 90px;
-      background: var(--black);
-      position: relative; overflow: hidden;
-    }
-    #outcomes::before {
-      content: ''; position: absolute;
-      width: 70vw; height: 70vw; max-width: 450px; max-height: 450px;
-      background: radial-gradient(circle, rgba(150,150,150,0.022) 0%, transparent 65%);
-      bottom: 10%; right: 5%;
-      animation: ambDrift2 11s ease-in-out infinite; pointer-events: none;
-    }
-    @keyframes ambDrift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-60px,-50px)} }
-    .outcomes-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
-    .outcomes-desc { font-size: clamp(14px,3.5vw,16px); font-weight: 300; color: var(--silver); line-height: 1.85; margin-top: 12px; }
-    .outcomes-title { font-size: clamp(42px,6vw,82px); }
-    
-    @media (max-width: 640px) {
-      .outcomes-title { font-size: clamp(38px,9vw,58px) !important; line-height: 1.1; }
-    }
-    .out-list { list-style: none; }
-    .out-item {
-      display: flex; align-items: center; gap: 16px;
-      padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-      font-size: clamp(15px,4vw,17px); font-weight: 600; color: var(--white);
-      position: relative; transition: padding-right 0.3s;
-    }
-    .out-item::after {
-      content: ''; position: absolute; bottom: -1px; right: 0;
-      height: 1px; width: 0;
-      background: linear-gradient(90deg, transparent, rgba(180,180,180,0.4));
-      transition: width 0.45s ease;
-    }
-    .out-item:hover::after { width: 100%; }
-    .out-item:hover { padding-right: 8px; }
-    .out-check {
-      width: 24px; height: 24px;
-      border: 1px solid rgba(230,57,70,0.3);
-      background: radial-gradient(circle, rgba(230,57,70,0.05), transparent);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; color: var(--accent); flex-shrink: 0;
-      transition: all 0.3s;
-      position: relative;
-      animation: checkFloat 3s ease-in-out infinite;
-    }
-    @keyframes checkFloat {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-4px); }
-    }
-    .out-item:nth-child(1) .out-check { animation-delay: 0s; }
-    .out-item:nth-child(2) .out-check { animation-delay: 0.3s; }
-    .out-item:nth-child(3) .out-check { animation-delay: 0.6s; }
-    .out-item:nth-child(4) .out-check { animation-delay: 0.9s; }
-    .out-check::before {
-      content: ''; position: absolute; inset: -4px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(230,57,70,0.2), transparent);
-      opacity: 0; transition: opacity 0.3s;
-    }
-    .out-item:hover .out-check {
-      border-color: var(--accent);
-      box-shadow: 0 0 12px rgba(230,57,70,0.4);
-      transform: scale(1.1);
-    }
-    .out-item:hover .out-check::before { opacity: 1; }
-
-    /* ─── STATS ─── */
-    .stats-bar {
-      background: var(--dark); position: relative; overflow: hidden;
-    }
-    .stats-bar::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent 0%, rgba(230,57,70,0.4) 20%, rgba(230,57,70,0.8) 50%, rgba(230,57,70,0.4) 80%, transparent 100%);
-      animation: silverSweep 7s ease-in-out infinite 3.5s;
-    }
-    .stats-inner {
-      max-width: 1060px; margin: 0 auto; padding: 60px 20px;
-      display: grid; grid-template-columns: repeat(4,1fr);
-    }
-    .stat-cell { text-align: center; padding: 12px; border-left: 1px solid rgba(255,255,255,0.06); }
-    .stat-cell:first-child { border-left: none; }
-    .stat-n {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(40px,5vw,68px); color: var(--white); line-height: 1;
-      transition: all 0.4s;
-      position: relative;
-      background: linear-gradient(135deg, var(--white) 0%, var(--accent) 50%, var(--white) 100%);
-      background-size: 200% 200%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: autoStatShimmer 5s ease infinite;
-    }
-    @keyframes autoStatShimmer {
-      0%, 100% { background-position: 0% 50%; opacity: 1; }
-      50% { background-position: 100% 50%; opacity: 0.9; }
-    }
-    .stat-cell:nth-child(1) .stat-n { animation-delay: 0s; }
-    .stat-cell:nth-child(2) .stat-n { animation-delay: 0.8s; }
-    .stat-cell:nth-child(3) .stat-n { animation-delay: 1.6s; }
-    .stat-cell:nth-child(4) .stat-n { animation-delay: 2.4s; }
-    .stat-cell:hover .stat-n {
-      text-shadow: 0 0 24px rgba(230,57,70,0.4);
-      animation: statShimmer 1.5s ease infinite;
-    }
-    @keyframes statShimmer {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-    }
-    .stat-l { font-size: 11px; letter-spacing: 0.08em; color: var(--silver); margin-top: 5px; }
-
-    /* ─── PRICING ─── */
-    #pricing {
-      padding: 80px 0 90px;
-      background: var(--black);
-    }
-    .price-wrap { max-width: 560px; margin: 44px auto 0; }
-    .price-card {
-      border: 1px solid rgba(255,255,255,0.13); padding: 52px 40px;
-      position: relative; background: var(--dark); text-align: center;
-      animation: borderPulse 4.5s ease-in-out infinite;
-    }
-    @keyframes borderPulse {
-      0%,100%{box-shadow:0 0 0 0 rgba(180,180,180,0)}
-      50%{box-shadow:0 0 30px rgba(140,140,140,0.07),inset 0 1px 0 rgba(200,200,200,0.07)}
-    }
-    .price-corner { 
-      position: absolute; width: 22px; height: 22px; transition: all 0.4s;
-      animation: cornerPulse 4s ease-in-out infinite;
-    }
-    @keyframes cornerPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; filter: drop-shadow(0 0 6px rgba(230,57,70,0.4)); }
-    }
-    .price-corner.tl {
-      top: -1px; right: -1px;
-      border-top: 1px solid rgba(230,57,70,0.6);
-      border-right: 1px solid rgba(230,57,70,0.6);
-      box-shadow: 0 0 8px rgba(230,57,70,0.3);
-    }
-    .price-corner.br {
-      bottom: -1px; left: -1px;
-      border-bottom: 1px solid rgba(230,57,70,0.6);
-      border-left: 1px solid rgba(230,57,70,0.6);
-      box-shadow: 0 0 8px rgba(230,57,70,0.3);
-    }
-    .price-card:hover .price-corner.tl {
-      width: 40px; height: 40px;
-      box-shadow: 0 0 16px rgba(230,57,70,0.5);
-    }
-    .price-card:hover .price-corner.br {
-      width: 40px; height: 40px;
-      box-shadow: 0 0 16px rgba(230,57,70,0.5);
-    }
-    .price-badge {
-      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-      background: var(--white); color: var(--black);
-      font-family: 'Bebas Neue', sans-serif; font-size: 11px; letter-spacing: 0.2em;
-      padding: 3px 20px; white-space: nowrap;
-      animation: badgeFloat 3s ease-in-out infinite;
-    }
-    @keyframes badgeFloat {
-      0%, 100% { transform: translateX(-50%) translateY(0px); }
-      50% { transform: translateX(-50%) translateY(-3px); }
-    }
-    .price-was { font-size: 15px; color: var(--silver); text-decoration: line-through; margin-bottom: 4px; }
-    .price-big { font-family: 'Bebas Neue', sans-serif; font-size: clamp(60px,10vw,100px); color: var(--white); line-height: 1; }
-    .price-big sup { font-size: 0.38em; vertical-align: super; color: var(--light); }
-    .price-note { font-size: 12px; color: var(--silver); letter-spacing: 0.05em; margin-bottom: 30px; }
-    .price-list { list-style: none; text-align: right; margin-bottom: 36px; display: flex; flex-direction: column; gap: 10px; }
-    .price-list li { display: flex; align-items: center; gap: 10px; font-size: clamp(13px,3.5vw,15px); color: var(--light); }
-    .price-list li::before { content:'✓'; width:20px; height:20px; border:1px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--white); flex-shrink:0; }
-    .price-cta {
-      width: 100%; display: block; background: var(--white); color: var(--black);
-      font-family: 'Bebas Neue', sans-serif; font-size: clamp(17px,4.5vw,20px); letter-spacing: 0.15em;
-      padding: 17px; border: none; text-decoration: none; text-align: center;
-      position: relative; overflow: hidden;
-      transition: transform 0.25s, box-shadow 0.3s;
-      -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-      box-shadow: 0 0 0 rgba(74,158,255,0);
-    }
-    .price-cta::before {
-      content: ''; position: absolute; inset: -3px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-      opacity: 0; transition: opacity 0.3s;
-      z-index: -1; filter: blur(12px);
-    }
-    .price-cta::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
-      transform: scaleX(0); transform-origin: right;
-      transition: transform 0.38s cubic-bezier(0.7,0,0.3,1);
-    }
-    .price-cta:hover::before { opacity: 0.7; }
-    .price-cta:hover::after { transform: scaleX(1); }
-    .price-cta:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 32px rgba(230,57,70,0.4);
-    }
-    .price-cta:active { transform: scale(0.98); }
-    .price-cta span { position: relative; z-index: 1; }
-
-    /* ─── FOOTER ─── */
-    footer { background: var(--dark); border-top: 1px solid rgba(255,255,255,0.05); padding: 36px 20px; }
-    .footer-inner { max-width: 1060px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .footer-brand { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 0.1em; color: var(--white); }
-    .footer-copy { font-size: 11px; color: var(--silver); }
-
-    /* ─── REVEAL ─── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(28px) scale(0.96);
-      filter: blur(4px);
-      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16,1,0.3,1), filter 0.8s ease;
-    }
-    .reveal.in {
-      opacity: 1;
-      transform: none;
-      filter: blur(0);
-    }
-    .stagger .reveal:nth-child(1) { transition-delay: 0s; }
-    .stagger .reveal:nth-child(2) { transition-delay: 0.1s; }
-    .stagger .reveal:nth-child(3) { transition-delay: 0.2s; }
-    .stagger .reveal:nth-child(4) { transition-delay: 0.3s; }
-
-    .section-wedge {
-      display: block; width: 100%; overflow: hidden; line-height: 0;
-      margin-bottom: -1px;
-    }
-    .section-wedge svg { display: block; width: 100%; height: auto; }
-
-    /* ─── MOBILE ─── */
-    @media (max-width: 640px) {
-      /* Disable parallax on mobile */
-      .hero-bg-num, .hero-glow::before, .hero-glow::after {
-        animation: none;
-      }
-      
-      /* Hero adjustments */
-      #hero { padding: max(60px, env(safe-area-inset-top) + 40px) 16px max(90px, env(safe-area-inset-bottom) + 70px) 16px; min-height: 100svh; }
-      .hero-title { font-size: clamp(52px, 13vw, 72px); line-height: 0.9; }
-      .hero-sub { 
-        font-size: clamp(14px, 4.2vw, 17px); 
-        line-height: 1.6; 
-        max-width: 100%; 
-        padding: 0 8px; 
-      }
-      .hero-sub .mobile-br { display: block; }
-      .hero-sub strong { display: inline; }
-      .hero-divider { max-width: 160px; }
-      .hero-btns { gap: 10px; width: 100%; padding: 0 8px; }
-      .hero-bg-num { display: none; }
-      .hero-glow { max-width: 500px; max-height: 500px; }
-      
-      /* Buttons - larger touch targets */
-      .btn-main, .btn-ghost { 
-        font-size: 15px; 
-        padding: 16px 32px; 
-        width: 100%;
-        max-width: 320px;
-        min-height: 48px;
-      }
-      
-      /* Pain section */
-      .pain-grid { grid-template-columns: 1fr; gap: 8px; }
-      .pain-cell { padding: 24px 20px; }
-      .pain-h { font-size: clamp(17px, 4.5vw, 20px); margin-bottom: 10px; }
-      .pain-p { font-size: clamp(14px, 3.8vw, 15px); line-height: 1.7; }
-      .pain-conclusion { font-size: clamp(22px, 5.8vw, 38px); margin-top: 36px; padding-top: 24px; }
-      
-      /* Curriculum */
-      .curr-head .s-title { font-size: clamp(32px, 7vw, 52px); line-height: 1.1; }
-      .curr-head .mobile-br { display: block; margin-bottom: 8px; }
-      .mod-row { 
-        grid-template-columns: 52px 1fr 24px; 
-        gap: 14px; 
-        padding: 18px 16px;
-        min-height: 72px;
-      }
-      .mod-n { font-size: 26px; }
-      .mod-title { font-size: clamp(16px, 4.2vw, 18px); margin-bottom: 6px; }
-      .mod-tag { font-size: 10px; padding: 3px 8px; }
-      .mod-arrow { font-size: 16px; }
-      
-      /* Outcomes */
-      .outcomes-wrap { grid-template-columns: 1fr; gap: 32px; }
-      .outcomes-title { font-size: clamp(40px, 9vw, 64px) !important; line-height: 1.15 !important; }
-      .outcomes-title .mobile-br { display: block; }
-      .outcomes-desc { font-size: clamp(14px, 3.8vw, 16px); margin-top: 8px; }
-      .out-item { 
-        padding: 14px 0; 
-        font-size: clamp(15px, 4.2vw, 17px); 
-        gap: 12px;
-        min-height: 52px;
-      }
-      .out-check { width: 22px; height: 22px; font-size: 10px; }
-      
-      /* Stats */
-      .stats-inner { 
-        grid-template-columns: 1fr 1fr; 
-        gap: 0; 
-        padding: 50px 16px;
-      }
-      .stat-cell { 
-        border-left: none; 
-        border-top: 1px solid rgba(255,255,255,0.06); 
-        padding: 20px 8px;
-        min-height: 100px;
-      }
-      .stat-cell:first-child { border-top: none; }
-      .stat-cell:nth-child(2) { border-top: none; }
-      .stat-cell:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.06); }
-      .stat-n { font-size: clamp(36px, 8vw, 56px); }
-      .stat-l { font-size: 10px; margin-top: 4px; }
-      
-      /* Pricing */
-      .price-wrap { margin-top: 36px; padding: 0 8px; }
-      .price-card { padding: 44px 20px 36px; }
-      .price-badge { font-size: 10px; padding: 3px 16px; top: -10px; }
-      .price-was { font-size: 14px; }
-      .price-big { font-size: clamp(56px, 12vw, 80px); }
-      .price-list { gap: 8px; margin-bottom: 28px; }
-      .price-list li { font-size: clamp(13px, 3.6vw, 15px); gap: 8px; line-height: 1.5; }
-      .price-list li::before { width: 18px; height: 18px; font-size: 9px; }
-      .price-cta { 
-        font-size: clamp(16px, 4.5vw, 19px); 
-        padding: 18px;
-        min-height: 54px;
-      }
-      
-      /* Container */
-      .container { padding: 0 16px; }
-      
-      /* Section padding */
-      #pain, #curriculum, #outcomes, #pricing { 
-        padding: 60px 0 70px; 
-      }
-      
-      /* Section titles */
-      .s-title { font-size: clamp(32px, 7vw, 54px); margin-bottom: 12px; }
-      
-      /* Ticker - same smooth speed on mobile */
-      .vticker { height: 38px; }
-      .vticker-track { gap: 40px; }
-      .vticker-content { gap: 40px; }
-      .vticker-chip { font-size: 10px; gap: 8px; letter-spacing: 0.16em; }
-      .vticker-chip .dot { width: 3px; height: 3px; }
-      @keyframes infiniteScroll {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(calc(-50% - 20px)); }
-      }
-      
-      /* Footer */
-      footer { padding: 32px 16px env(safe-area-inset-bottom, 16px); }
-      .footer-inner { flex-direction: column; text-align: center; gap: 8px; }
-      .footer-brand { font-size: 24px; }
-      .footer-copy { font-size: 10px; }
-      
-      /* Scroll hint */
-      .hero-scroll-hint { bottom: max(24px, env(safe-area-inset-bottom) + 12px); }
-      .scroll-track { height: 44px; }
-      
-      /* Wedges - reduce height on mobile */
-      .section-wedge svg { height: 30px; }
-      
-      /* Disable hover effects on mobile */
-      .pain-cell:hover { transform: none; background: var(--black); }
-      .mod-row:hover { transform: none; border-color: rgba(255,255,255,0.05); }
-      .out-item:hover { padding-right: 0; }
-      .out-item:hover .out-check { transform: translateY(-4px) scale(1); }
-    }
-    
-    @media (max-width: 400px) {
-      .hero-title { font-size: clamp(48px, 12vw, 64px); }
-      .hero-sub { font-size: clamp(13px, 4vw, 15px); }
-      .btn-main, .btn-ghost { font-size: 14px; padding: 15px 28px; }
-      .pain-h { font-size: clamp(16px, 4.5vw, 18px); }
-      .pain-p { font-size: clamp(13px, 3.8vw, 14px); }
-      .mod-row { padding: 16px 14px; }
-      .stat-cell { padding: 18px 6px; }
-      .price-card { padding: 40px 16px 32px; }
-    }
-    
-    /* Landscape mobile */
-    @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
-      #hero { min-height: auto; padding: 40px 16px 60px; }
-      .hero-title { font-size: clamp(40px, 8vw, 56px); }
-      .hero-scroll-hint { display: none; }
-      .hero-glow { max-width: 400px; max-height: 400px; }
-    }
-  
-/* === Mobile Hero Fix === */
-@media (max-width: 640px) {
-  .hero-line1,
-  .hero-line2 {
-    display: block;
-  }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futures Risk Calculator</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
 }
-
-
-/* === Mobile Break Utility === */
-.mobile-break { display: none; }
-
-@media (max-width: 640px) {
-  .mobile-break {
-    display: block;
-    height: 6px;
-  }
+.container {
+    background: #1e293b;
+    padding: 25px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
 }
-
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+}
+button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    background: #22c55e;
+    color: white;
+    cursor: pointer;
+}
+button:hover {
+    opacity: 0.9;
+}
+.results {
+    margin-top: 20px;
+    background: #0f172a;
+    padding: 15px;
+    border-radius: 12px;
+}
+.result-item {
+    margin-bottom: 10px;
+}
+.highlight {
+    font-weight: bold;
+    color: #22c55e;
+}
 </style>
 </head>
 <body>
 
-  <!-- BACKGROUND FLOWING LINES -->
-  <canvas id="bg-canvas"></canvas>
-  <div id="loader">
-    <div class="loader-inner">
-      <div class="loader-word"><span>איך להפוך</span><span class="fill">איך להפוך</span></div>
-      <div class="loader-word"><span>למאמן של עצמך</span><span class="fill">למאמן של עצמך</span></div>
-      <div class="loader-line"></div>
-      <div class="loader-word" style="font-size:clamp(16px,3.2vw,38px);letter-spacing:0.16em;-webkit-text-stroke:1px rgba(255,255,255,0.1);margin-top:18px">
-        <span>ולקחת את הגוף ל NEXT LEVEL</span>
-        <span class="fill">ולקחת את הגוף ל NEXT LEVEL</span>
-      </div>
-      <div class="loader-pct" id="loaderPct">LOADING... 0%</div>
+<div class="container">
+    <h2>Futures Risk Calculator</h2>
+
+    <input type="number" id="account" placeholder="גודל תיק (USDT)">
+    <input type="number" id="risk" placeholder="אחוז סיכון מהתיק (%)">
+    <input type="number" id="stop" placeholder="אחוז סטופ מהכניסה (%)">
+    <input type="number" id="tp" placeholder="אחוז טייק פרופיט (%)">
+
+    <button onclick="calculate()">חשב</button>
+
+    <div class="results" id="results" style="display:none;">
+        <div class="result-item" id="riskAmount"></div>
+        <div class="result-item" id="leverage"></div>
+        <div class="result-item" id="positionSize"></div>
+        <div class="result-item" id="margin"></div>
+        <hr style="border-color:#334155;">
+        <div class="result-item highlight" id="rr"></div>
+        <div class="result-item" id="profitAmount"></div>
+        <div class="result-item" id="breakeven"></div>
     </div>
-  </div>
+</div>
 
-  <!-- ════ HERO ════ -->
-  <section id="hero">
-    <div class="hero-stripe"></div>
-    <div class="hero-glow"></div>
-    <div class="hero-bg-num">NL</div>
-    <div class="particles" id="particles"></div>
-    <div class="hero-content">
-      <h1 class="hero-title">
-        <span class="t-line"><span>מתאמן קשה</span></span>
-        <span class="t-line"><span>ולא רואה</span></span>
-        <span class="t-line"><span>תוצאות?</span></span>
-      </h1>
-      <div class="hero-divider"></div>
-      <p class="hero-sub">
-        <strong class="hero-sub-line1">הבעיה היא לא האימונים שאתם עושים —</strong><br class="mobile-br">
-        <strong class="hero-sub-line2">הבעיה היא שאתם לא באמת מבינים מה צריך לעשות.</strong><br>
-        הגיע הזמן לראות תוצאות אמיתיות.
-      </p>
-      <div class="hero-btns">
-        <a href="https://pay.grow.link/6ef2af5a9e5a1b243bcf27005c57a845-MTcyNDE0OA" target="_blank" class="btn-main"><span>לרכישה ←</span></a>
-        <a href="#curriculum" class="btn-ghost">מה נלמד בקורס?</a>
-      </div>
-    </div>
-    <div class="hero-scroll-hint"><div class="scroll-track"></div></div>
-  </section>
+<script>
+function calculate() {
+    const account = parseFloat(document.getElementById("account").value);
+    const riskPercentInput = parseFloat(document.getElementById("risk").value);
+    const stopPercentInput = parseFloat(document.getElementById("stop").value);
+    const tpPercentInput = parseFloat(document.getElementById("tp").value);
 
-  <!-- wedge: hero → ticker -->
-  <div class="section-wedge" style="background:var(--black)">
-    <svg viewBox="0 0 1440 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="0,28 1440,0 1440,28" fill="rgba(255,255,255,0.03)"/>
-    </svg>
-  </div>
-
-  <!-- TICKER -->
-  <div class="vticker">
-    <div class="vticker-track">
-      <div class="vticker-content">
-        <span class="vticker-chip"><span class="dot"></span>תזונת ספורט</span>
-        <span class="vticker-chip"><span class="dot"></span>חיטוב ומסה</span>
-        <span class="vticker-chip"><span class="dot"></span>תכניות אימון</span>
-        <span class="vticker-chip"><span class="dot"></span>אנטומיה מעמיקה</span>
-        <span class="vticker-chip"><span class="dot"></span>תוספי תזונה</span>
-        <span class="vticker-chip"><span class="dot"></span>תורת האימון</span>
-        <span class="vticker-chip"><span class="dot"></span>פציעות ושיקום</span>
-        <span class="vticker-chip"><span class="dot"></span>MyFitnessPal</span>
-        <span class="vticker-chip"><span class="dot"></span>שיטות אימון</span>
-        <span class="vticker-chip"><span class="dot"></span>NEXT LEVEL</span>
-        <span class="vticker-chip"><span class="dot"></span>ידע מקצועי</span>
-        <span class="vticker-chip"><span class="dot"></span>תוצאות אמיתיות</span>
-      </div>
-      <div class="vticker-content">
-        <span class="vticker-chip"><span class="dot"></span>תזונת ספורט</span>
-        <span class="vticker-chip"><span class="dot"></span>חיטוב ומסה</span>
-        <span class="vticker-chip"><span class="dot"></span>תכניות אימון</span>
-        <span class="vticker-chip"><span class="dot"></span>אנטומיה מעמיקה</span>
-        <span class="vticker-chip"><span class="dot"></span>תוספי תזונה</span>
-        <span class="vticker-chip"><span class="dot"></span>תורת האימון</span>
-        <span class="vticker-chip"><span class="dot"></span>פציעות ושיקום</span>
-        <span class="vticker-chip"><span class="dot"></span>MyFitnessPal</span>
-        <span class="vticker-chip"><span class="dot"></span>שיטות אימון</span>
-        <span class="vticker-chip"><span class="dot"></span>NEXT LEVEL</span>
-        <span class="vticker-chip"><span class="dot"></span>ידע מקצועי</span>
-        <span class="vticker-chip"><span class="dot"></span>תוצאות אמיתיות</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════ PAIN ════ -->
-  <div class="section-wedge" style="background:var(--black)">
-    <svg viewBox="0 0 1440 40" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="0,40 1440,0 1440,40" fill="var(--black)"/>
-      <line x1="0" y1="40" x2="1440" y2="0" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-    </svg>
-  </div>
-
-  <section id="pain">
-    <div class="container">
-      <h2 class="s-title reveal">אם אתה מזדהה עם אחד מהפרמטרים - <em>הקורס הזה בשבילך.</em></h2>
-      <div class="pain-grid stagger">
-        <div class="pain-cell reveal">
-          <div class="pain-h">מתאמן ולא רואה שינוי</div>
-        </div>
-        <div class="pain-cell reveal">
-          <div class="pain-h">מעתיק ממאמנים באינסטגרם/יוטיוב וחושב שזה יעבוד עבורך</div>
-        </div>
-        <div class="pain-cell reveal">
-          <div class="pain-h">מתבלבל מכל עניין התזונה</div>
-        </div>
-        <div class="pain-cell reveal">
-          <div class="pain-h">עושה כמו כולם ומצפה לתוצאה אחרת</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ════ CURRICULUM ════ -->
-  <div class="section-wedge" style="background:var(--dark)">
-    <svg viewBox="0 0 1440 44" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="0,0 1440,44 0,44" fill="var(--black)"/>
-      <line x1="0" y1="0" x2="1440" y2="44" stroke="rgba(255,255,255,0.055)" stroke-width="1"/>
-    </svg>
-  </div>
-
-  <section id="curriculum">
-    <div class="container">
-      <div class="curr-head">
-        <h2 class="s-title reveal"><span class="curr-line1">תזונה · אנטומיה · תורת האימון</span><br class="mobile-br"><span class="curr-line2"><em>הכל בשפה ברורה.</em></span></h2>
-      </div>
-      <div class="mod-list">
-        <div class="mod-row reveal">
-          <div class="mod-n">01</div>
-          <div>
-            <div class="mod-title">תזונת ספורט</div>
-            <div class="mod-tags">
-              <span class="mod-tag">חיטוב ומסה</span><span class="mod-tag">אבות המזון</span>
-              <span class="mod-tag">תוספים</span><span class="mod-tag">תזמון ארוחות</span><span class="mod-tag">מתוקים</span>
-            </div>
-          </div>
-          <div class="mod-arrow">←</div>
-        </div>
-        <div class="mod-row reveal">
-          <div class="mod-n">02</div>
-          <div>
-            <div class="mod-title">אנטומיה</div>
-            <div class="mod-tags">
-              <span class="mod-tag">מבוא לאנטומיה</span><span class="mod-tag">תנועות ומישורים</span>
-              <span class="mod-tag">עצמות ומפרקים</span><span class="mod-tag">שרירים וגידים</span>
-            </div>
-          </div>
-          <div class="mod-arrow">←</div>
-        </div>
-        <div class="mod-row reveal">
-          <div class="mod-n">03</div>
-          <div>
-            <div class="mod-title">תורת האימון</div>
-            <div class="mod-tags">
-              <span class="mod-tag">בניית שריר</span><span class="mod-tag">שיטות אימון</span>
-              <span class="mod-tag">פציעות</span>
-            </div>
-          </div>
-          <div class="mod-arrow">←</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ════ OUTCOMES ════ -->
-  <div class="section-wedge" style="background:var(--black)">
-    <svg viewBox="0 0 1440 44" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="0,44 1440,0 1440,44" fill="var(--dark)"/>
-      <line x1="0" y1="44" x2="1440" y2="0" stroke="rgba(255,255,255,0.055)" stroke-width="1"/>
-    </svg>
-  </div>
-
-  <section id="outcomes">
-    <div class="container">
-      <div class="outcomes-wrap">
-        <div>
-          <h2 class="s-title reveal outcomes-title"><span class="out-line1">עם איזה ידע תצא</span><br class="mobile-br"><span class="out-line2">בסוף <em>הקורס</em></span></h2>
-        </div>
-        <ul class="out-list">
-          <li class="out-item reveal"><span class="out-check">✓</span>לבנות תפריט תזונה מותאם אישית</li>
-          <li class="out-item reveal"><span class="out-check">✓</span>להבין את גוף האדם מבפנים</li>
-          <li class="out-item reveal"><span class="out-check">✓</span>לנהל תהליכי חיטוב ומסה לבד</li>
-          <li class="out-item reveal"><span class="out-check">✓</span>לעבוד עם MyFitnessPal בצורה חכמה</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- ════ STATS ════ -->
-  <div class="section-wedge" style="background:var(--dark)">
-    <svg viewBox="0 0 1440 44" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="0,0 1440,44 0,44" fill="var(--black)"/>
-      <line x1="0" y1="0" x2="1440" y2="44" stroke="rgba(255,255,255,0.055)" stroke-width="1"/>
-    </svg>
-  </div>
-
-  <div class="stats-bar reveal">
-    <div class="stats-inner">
-      <div class="stat-cell">
-        <div class="stat-n" id="studentCount">0</div>
-        <div class="stat-l">תלמידים</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-n" data-count="97">0</div>
-        <div class="stat-l">% שביעות רצון</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-n">12</div>
-        <div class="stat-l">נושאים לימודיים</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-n" style="font-size:clamp(28px,4vw,48px);letter-spacing:0.02em">לכל החיים</div>
-        <div class="stat-l">גישה לקורס</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════ PRICING ════ -->
-  <div class="section-wedge" style="background:var(--black)">
-    <svg viewBox="0 0 1440 44" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="0,44 1440,0 1440,44" fill="var(--dark)"/>
-      <line x1="0" y1="44" x2="1440" y2="0" stroke="rgba(255,255,255,0.055)" stroke-width="1"/>
-    </svg>
-  </div>
-
-  <section id="pricing">
-    <div class="container">
-      <h2 class="s-title reveal" style="text-align:center;display:block">השקעה חד פעמית.<br><em>ידע לכל החיים.</em></h2>
-      <div class="price-wrap">
-        <div class="price-card reveal">
-          <div class="price-corner tl"></div>
-          <div class="price-corner br"></div>
-          <div class="price-badge">מחיר השקה מוגבל</div>
-          <div class="price-was">₪997</div>
-          <div class="price-big"><sup>₪</sup>499</div>
-          <ul class="price-list">
-            <li>3 כל הידע שאתה צריך על: תזונה, אנטומיה ואימונים</li>
-            <li>למידת היכולת לבנות תכנית אימונים מושלמת</li>
-            <li>מדריך מלא לעבודה עם MyFitnessPal</li>
-            <li>בונוסים: שאלות נפוצות, מיתוסים וסיכום מעשי</li>
-            <li>גישה מכל מכשיר לכל החיים</li>
-          </ul>
-          <a href="https://pay.grow.link/6ef2af5a9e5a1b243bcf27005c57a845-MTcyNDE0OA" target="_blank" class="price-cta"><span>לרכישה ←</span></a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- wedge: pricing → footer -->
-  <div class="section-wedge" style="background:var(--dark)">
-    <svg viewBox="0 0 1440 44" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="0,0 1440,44 0,44" fill="var(--black)"/>
-      <line x1="0" y1="0" x2="1440" y2="44" stroke="rgba(255,255,255,0.055)" stroke-width="1"/>
-    </svg>
-  </div>
-
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-inner">
-      <div class="footer-brand">TB STUDIO</div>
-      <div class="footer-copy">© 2026 כל הזכויות שמורות · מדיניות פרטיות</div>
-    </div>
-  </footer>
-
-  <script>
-    /* ── PARTICLES ── */
-    (function() {
-      const c = document.getElementById('particles');
-      if (!c) return;
-      const isMobile = window.innerWidth < 640;
-      const count = isMobile ? 14 : 26;
-      for (let i = 0; i < count; i++) {
-        const p = document.createElement('div');
-        p.className = 'particle';
-        const sz = Math.random() * 1.8 + 0.8;
-        const r = 175 + Math.round(Math.random() * 45);
-        p.style.cssText =
-          'width:' + sz + 'px;' +
-          'height:' + sz + 'px;' +
-          'left:' + Math.random() * 100 + '%;' +
-          'bottom:' + (Math.random() * 40 - 5) + '%;' +
-          'animation-duration:' + (Math.random() * 14 + 11) + 's;' +
-          'animation-delay:' + (Math.random() * 14) + 's;' +
-          'opacity:0;' +
-          'background:rgba(' + r + ',' + r + ',' + r + ',0.42);';
-        c.appendChild(p);
-      }
-    })();
-
-    /* ── LOADER ── */
-    let pct = 0;
-    const pctEl = document.getElementById('loaderPct');
-    const pt = setInterval(() => {
-      pct += Math.floor(Math.random() * 11) + 3;
-      if (pct >= 100) { pct = 100; clearInterval(pt); }
-      pctEl.textContent = 'LOADING... ' + pct + '%';
-    }, 90);
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        const l = document.getElementById('loader');
-        l.classList.add('exit');
-        setTimeout(() => { l.style.display = 'none'; }, 850);
-      }, 2000);
-    });
-
-    /* ── SCROLL REVEAL ── */
-    const ro = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
-    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-    document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
-
-    /* ── STUDENT COUNTER ── */
-    let studentSeen = 0;
-    const studentEl = document.getElementById('studentCount');
-    const sObs = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        if (!e.isIntersecting) return;
-        studentSeen++;
-        if (studentSeen === 1) {
-          let cur = 0; const target = 567; const step = target / (1600 / 16);
-          const t = setInterval(() => {
-            cur += step;
-            if (cur >= target) { cur = target; clearInterval(t); }
-            studentEl.textContent = Math.floor(cur).toLocaleString('he');
-          }, 16);
-        } else if (studentSeen === 2) {
-          studentEl.style.transition = 'opacity 0.25s';
-          studentEl.style.opacity = '0.35';
-          setTimeout(() => {
-            studentEl.textContent = (568).toLocaleString('he');
-            studentEl.style.opacity = '1';
-          }, 350);
-        }
-      });
-    }, { threshold: 0.5 });
-    if (studentEl) sObs.observe(studentEl);
-
-    /* ── OTHER COUNT UP ── */
-    const co = new IntersectionObserver(entries => {
-      entries.forEach(e => {
-        if (e.isIntersecting && e.target.dataset.count) {
-          const tgt = parseInt(e.target.dataset.count);
-          let cur = 0; const step = tgt / (1600 / 16);
-          const t = setInterval(() => {
-            cur += step;
-            if (cur >= tgt) { cur = tgt; clearInterval(t); }
-            e.target.textContent = Math.floor(cur).toLocaleString('he');
-          }, 16);
-          co.unobserve(e.target);
-        }
-      });
-    }, { threshold: 0.5 });
-    document.querySelectorAll('[data-count]').forEach(el => co.observe(el));
-
-    /* ── FLOWING BURGUNDY LINES ── */
-    (function() {
-      const canvas = document.getElementById('bg-canvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-
-      function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
-      resize();
-      window.addEventListener('resize', resize, { passive: true });
-
-      // Each line is a flowing sine curve
-      const lines = [];
-      const count = window.innerWidth < 640 ? 5 : 9;
-
-      for (let i = 0; i < count; i++) {
-        lines.push({
-          y: Math.random() * 1.4 - 0.2,     // vertical position (fraction of height)
-          amplitude: 40 + Math.random() * 80, // wave height
-          frequency: 0.0008 + Math.random() * 0.0012, // wave frequency
-          speed: 0.0003 + Math.random() * 0.0004,      // how fast it drifts
-          offset: Math.random() * Math.PI * 2,          // phase offset
-          opacity: 0.04 + Math.random() * 0.10,        // subtle opacity
-          width: 0.5 + Math.random() * 1.0,             // line thickness
-          drift: (Math.random() - 0.5) * 0.00008,      // slow vertical drift
-        });
-      }
-
-      let t = 0;
-
-      function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const W = canvas.width;
-        const H = canvas.height;
-
-        lines.forEach(line => {
-          line.y += line.drift;
-          // Bounce back at edges
-          if (line.y < -0.3 || line.y > 1.3) line.drift *= -1;
-
-          ctx.beginPath();
-
-          // Build the path with smooth bezier-like sampling
-          const steps = 200;
-          for (let s = 0; s <= steps; s++) {
-            const x = (s / steps) * W;
-            const wave1 = Math.sin(x * line.frequency + t * line.speed + line.offset);
-            const wave2 = Math.sin(x * line.frequency * 1.7 + t * line.speed * 0.6 + line.offset + 1.2);
-            const wave3 = Math.sin(x * line.frequency * 0.4 + t * line.speed * 1.3 + line.offset + 2.5);
-            const y = line.y * H + (wave1 * 0.6 + wave2 * 0.25 + wave3 * 0.15) * line.amplitude;
-
-            if (s === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-
-          // Burgundy/dark-red glow
-          ctx.shadowColor = 'rgba(160, 20, 40, 0.6)';
-          ctx.shadowBlur = 8;
-          ctx.strokeStyle = `rgba(140, 10, 30, ${line.opacity})`;
-          ctx.lineWidth = line.width;
-          ctx.stroke();
-        });
-
-        t++;
-        requestAnimationFrame(draw);
-      }
-
-      draw();
-    })();
-
-
-    if (window.innerWidth > 768) {
-      const hc = document.querySelector('.hero-content');
-      const hbn = document.querySelector('.hero-bg-num');
-      let ticking = false;
-      window.addEventListener('scroll', () => {
-        if (!ticking) {
-          requestAnimationFrame(() => {
-            const y = window.scrollY;
-            if (y < window.innerHeight) {
-              if (hc) hc.style.transform = 'translateY(' + (y * 0.14) + 'px)';
-              if (hbn) hbn.style.transform = 'translate(-50%, calc(-50% + ' + (y * 0.06) + 'px))';
-            }
-            ticking = false;
-          });
-          ticking = true;
-        }
-      }, { passive: true });
+    if (!account || !riskPercentInput || !stopPercentInput || !tpPercentInput) {
+        alert("תמלא את כל השדות");
+        return;
     }
-  </script>
+
+    const riskPercent = riskPercentInput / 100;
+    const stopPercent = stopPercentInput / 100;
+    const tpPercent = tpPercentInput / 100;
+
+    if (stopPercent <= 0) {
+        alert("סטופ חייב להיות גדול מ-0");
+        return;
+    }
+
+    const riskAmount = account * riskPercent;
+
+    // מינוף נדרש
+    const leverage = riskPercent / stopPercent;
+
+    // גודל פוזיציה
+    const positionSize = account * leverage;
+
+    // מרג'ין (כאן מניחים שמשתמש בכל הסכום שהוזן)
+    const margin = account;
+
+    // רווח פוטנציאלי בדולרים
+    const profitAmount = positionSize * tpPercent;
+
+    // Risk Reward Ratio
+    const rrRatio = tpPercentInput / stopPercentInput;
+
+    // אחוז הצלחה נדרש כדי לא להפסיד (Break Even Win Rate)
+    const breakevenWinrate = 100 / (1 + rrRatio);
+
+    document.getElementById("riskAmount").innerHTML =
+        "💰 סכום סיכון מותר: " + riskAmount.toFixed(2) + " USDT";
+
+    document.getElementById("leverage").innerHTML =
+        "⚙️ מינוף נדרש (Isolated): x" + leverage.toFixed(2);
+
+    document.getElementById("positionSize").innerHTML =
+        "📊 גודל פוזיציה: " + positionSize.toFixed(2) + " USDT";
+
+    document.getElementById("margin").innerHTML =
+        "🧮 מרג'ין להכניס: " + margin.toFixed(2) + " USDT";
+
+    document.getElementById("rr").innerHTML =
+        "📈 Risk / Reward Ratio: 1 : " + rrRatio.toFixed(2);
+
+    document.getElementById("profitAmount").innerHTML =
+        "🚀 רווח פוטנציאלי ב-TP: " + profitAmount.toFixed(2) + " USDT";
+
+    document.getElementById("breakeven").innerHTML =
+        "🎯 אחוז הצלחה מינימלי לאיזון: " + breakevenWinrate.toFixed(2) + "%";
+
+    document.getElementById("results").style.display = "block";
+}
+</script>
+
 </body>
 </html>
